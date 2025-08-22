@@ -1,101 +1,124 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Briefcase, ArrowLeft, Upload, FileText, Trash2, Download, Zap, User, Mail, Phone, MapPin, Calendar, Building, GraduationCap, Award, FileDown } from 'lucide-react'
-import Link from "next/link"
-import { UserMenu } from "./user-menu"
-import { ResumeUpload } from "./resume-upload"
-import { SkillsExtractor } from "./skills-extractor"
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Briefcase,
+  ArrowLeft,
+  Upload,
+  FileText,
+  Trash2,
+  Download,
+  Zap,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Building,
+  GraduationCap,
+  Award,
+  FileDown,
+} from "lucide-react";
+import Link from "next/link";
+import { UserMenu } from "./user-menu";
+import { ResumeUpload } from "./resume-upload";
+import { SkillsExtractor } from "./skills-extractor";
 
 interface WorkExperience {
-  id: string
-  jobTitle: string
-  company: string
-  location: string
-  startDate: string
-  endDate: string
-  current: boolean
-  description: string
+  id: string;
+  jobTitle: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  description: string;
 }
 
 interface Education {
-  id: string
-  degree: string
-  institution: string
-  location: string
-  graduationDate: string
-  gpa?: string
-  description: string
+  id: string;
+  degree: string;
+  institution: string;
+  location: string;
+  graduationDate: string;
+  gpa?: string;
+  description: string;
 }
 
 interface Project {
-  id: string
-  name: string
-  description: string
-  technologies: string[]
-  url?: string
-  startDate: string
-  endDate: string
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+  url?: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface Certification {
-  id: string
-  name: string
-  issuer: string
-  issueDate: string
-  expiryDate?: string
-  credentialId?: string
+  id: string;
+  name: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate?: string;
+  credentialId?: string;
 }
 
 interface UserProfile {
   // Personal Information
-  fullName: string
-  email: string
-  phone: string
-  location: string
-  linkedinUrl: string
-  githubUrl: string
-  portfolioUrl: string
-  
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedinUrl: string;
+  githubUrl: string;
+  portfolioUrl: string;
+
   // Professional Summary
-  professionalSummary: string
-  
+  professionalSummary: string;
+
   // Skills
-  skills: string[]
-  
+  skills: string[];
+
   // Work Experience
-  workExperience: WorkExperience[]
-  
+  workExperience: WorkExperience[];
+
   // Education
-  education: Education[]
-  
+  education: Education[];
+
   // Projects
-  projects: Project[]
-  
+  projects: Project[];
+
   // Certifications
-  certifications: Certification[]
-  
+  certifications: Certification[];
+
   // Languages
-  languages: string[]
-  
+  languages: string[];
+
   // Resume File
-  resumeFile?: File
-  resumeText?: string
-  lastUpdated: string
+  resumeFile?: File;
+  resumeText?: string;
+  lastUpdated: string;
 }
 
 export function ProfilePage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile>({
     fullName: "",
     email: "",
@@ -111,10 +134,10 @@ export function ProfilePage() {
     projects: [],
     certifications: [],
     languages: [],
-    lastUpdated: ""
-  })
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    lastUpdated: "",
+  });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState<UserProfile>({
     fullName: "",
     email: "",
@@ -130,22 +153,22 @@ export function ProfilePage() {
     projects: [],
     certifications: [],
     languages: [],
-    lastUpdated: ""
-  })
+    lastUpdated: "",
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
-  }, [status, router])
+  }, [status, router]);
 
   useEffect(() => {
     if (session?.user?.email) {
-      const profileKey = `profile_${session.user.email}`
-      const savedProfile = localStorage.getItem(profileKey)
+      const profileKey = `profile_${session.user.email}`;
+      const savedProfile = localStorage.getItem(profileKey);
       if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile)
+        const parsedProfile = JSON.parse(savedProfile);
         // Ensure all arrays exist with default empty arrays and are actually arrays
         const safeProfile = {
           fullName: parsedProfile.fullName || "",
@@ -156,18 +179,30 @@ export function ProfilePage() {
           githubUrl: parsedProfile.githubUrl || "",
           portfolioUrl: parsedProfile.portfolioUrl || "",
           professionalSummary: parsedProfile.professionalSummary || "",
-          skills: Array.isArray(parsedProfile.skills) ? parsedProfile.skills : [],
-          workExperience: Array.isArray(parsedProfile.workExperience) ? parsedProfile.workExperience : [],
-          education: Array.isArray(parsedProfile.education) ? parsedProfile.education : [],
-          projects: Array.isArray(parsedProfile.projects) ? parsedProfile.projects : [],
-          certifications: Array.isArray(parsedProfile.certifications) ? parsedProfile.certifications : [],
-          languages: Array.isArray(parsedProfile.languages) ? parsedProfile.languages : [],
+          skills: Array.isArray(parsedProfile.skills)
+            ? parsedProfile.skills
+            : [],
+          workExperience: Array.isArray(parsedProfile.workExperience)
+            ? parsedProfile.workExperience
+            : [],
+          education: Array.isArray(parsedProfile.education)
+            ? parsedProfile.education
+            : [],
+          projects: Array.isArray(parsedProfile.projects)
+            ? parsedProfile.projects
+            : [],
+          certifications: Array.isArray(parsedProfile.certifications)
+            ? parsedProfile.certifications
+            : [],
+          languages: Array.isArray(parsedProfile.languages)
+            ? parsedProfile.languages
+            : [],
           lastUpdated: parsedProfile.lastUpdated || "",
           resumeFile: parsedProfile.resumeFile,
-          resumeText: parsedProfile.resumeText
-        }
-        setProfile(safeProfile)
-        setFormData(safeProfile)
+          resumeText: parsedProfile.resumeText,
+        };
+        setProfile(safeProfile);
+        setFormData(safeProfile);
       } else {
         // Initialize with session data if available
         const initialData = {
@@ -185,88 +220,92 @@ export function ProfilePage() {
           projects: [],
           certifications: [],
           languages: [],
-          lastUpdated: ""
-        }
-        setProfile(initialData)
-        setFormData(initialData)
+          lastUpdated: "",
+        };
+        setProfile(initialData);
+        setFormData(initialData);
       }
     }
-  }, [session])
+  }, [session]);
 
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   if (!session) {
-    return null
+    return null;
   }
 
   const saveProfile = (updatedProfile: UserProfile) => {
     if (session?.user?.email) {
-      const profileKey = `profile_${session.user.email}`
+      const profileKey = `profile_${session.user.email}`;
       const profileToSave = {
         ...updatedProfile,
-        lastUpdated: new Date().toISOString()
-      }
-      localStorage.setItem(profileKey, JSON.stringify(profileToSave))
-      setProfile(profileToSave)
+        lastUpdated: new Date().toISOString(),
+      };
+      localStorage.setItem(profileKey, JSON.stringify(profileToSave));
+      setProfile(profileToSave);
     }
-  }
+  };
 
   const handleResumeUpload = async (file: File) => {
-    setIsAnalyzing(true)
-    
+    setIsAnalyzing(true);
+
     try {
       // Extract comprehensive data from resume
-      const resumeData = await extractComprehensiveDataFromPDF(file)
-      
+      const resumeData = await extractComprehensiveDataFromPDF(file);
+
       const updatedProfile = {
         ...profile,
         ...resumeData,
         resumeFile: file,
         // Ensure skills is always an array
-        skills: [...new Set([...(profile.skills || []), ...(resumeData.skills || [])])]
-      }
-      
-      setFormData(updatedProfile)
-      saveProfile(updatedProfile)
-      setHasUnsavedChanges(false)
+        skills: [
+          ...new Set([...(profile.skills || []), ...(resumeData.skills || [])]),
+        ],
+      };
+
+      setFormData(updatedProfile);
+      saveProfile(updatedProfile);
+      setHasUnsavedChanges(false);
     } catch (error) {
-      console.error("Error processing resume:", error)
+      console.error("Error processing resume:", error);
     } finally {
-      setIsAnalyzing(false)
+      setIsAnalyzing(false);
     }
-  }
+  };
 
   const removeSkill = (skillToRemove: string) => {
-    const updatedSkills = formData.skills.filter(skill => skill !== skillToRemove)
-    const updatedFormData = { ...formData, skills: updatedSkills }
-    setFormData(updatedFormData)
-    saveProfile(updatedFormData)
-  }
+    const updatedSkills = formData.skills.filter(
+      (skill) => skill !== skillToRemove
+    );
+    const updatedFormData = { ...formData, skills: updatedSkills };
+    setFormData(updatedFormData);
+    saveProfile(updatedFormData);
+  };
 
   const addSkill = (newSkill: string) => {
     if (newSkill && !formData.skills.includes(newSkill)) {
-      const updatedSkills = [...formData.skills, newSkill]
-      const updatedFormData = { ...formData, skills: updatedSkills }
-      setFormData(updatedFormData)
-      saveProfile(updatedFormData)
+      const updatedSkills = [...formData.skills, newSkill];
+      const updatedFormData = { ...formData, skills: updatedSkills };
+      setFormData(updatedFormData);
+      saveProfile(updatedFormData);
     }
-  }
+  };
 
   const handleSave = () => {
-    saveProfile(formData)
-    setHasUnsavedChanges(false)
-  }
+    saveProfile(formData);
+    setHasUnsavedChanges(false);
+  };
 
   const updateFormField = (field: keyof UserProfile, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    setHasUnsavedChanges(true)
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
 
   const addWorkExperience = () => {
     const newExperience: WorkExperience = {
@@ -277,25 +316,35 @@ export function ProfilePage() {
       startDate: "",
       endDate: "",
       current: false,
-      description: ""
-    }
-    const currentExperience = Array.isArray(formData.workExperience) ? formData.workExperience : []
-    updateFormField('workExperience', [...currentExperience, newExperience])
-  }
+      description: "",
+    };
+    const currentExperience = Array.isArray(formData.workExperience)
+      ? formData.workExperience
+      : [];
+    updateFormField("workExperience", [...currentExperience, newExperience]);
+  };
 
-  const updateWorkExperience = (id: string, field: keyof WorkExperience, value: any) => {
-    const currentExperience = Array.isArray(formData.workExperience) ? formData.workExperience : []
-    const updated = currentExperience.map(exp => 
+  const updateWorkExperience = (
+    id: string,
+    field: keyof WorkExperience,
+    value: any
+  ) => {
+    const currentExperience = Array.isArray(formData.workExperience)
+      ? formData.workExperience
+      : [];
+    const updated = currentExperience.map((exp) =>
       exp.id === id ? { ...exp, [field]: value } : exp
-    )
-    updateFormField('workExperience', updated)
-  }
+    );
+    updateFormField("workExperience", updated);
+  };
 
   const removeWorkExperience = (id: string) => {
-    const currentExperience = Array.isArray(formData.workExperience) ? formData.workExperience : []
-    const updated = currentExperience.filter(exp => exp.id !== id)
-    updateFormField('workExperience', updated)
-  }
+    const currentExperience = Array.isArray(formData.workExperience)
+      ? formData.workExperience
+      : [];
+    const updated = currentExperience.filter((exp) => exp.id !== id);
+    updateFormField("workExperience", updated);
+  };
 
   const addEducation = () => {
     const newEducation: Education = {
@@ -305,25 +354,31 @@ export function ProfilePage() {
       location: "",
       graduationDate: "",
       gpa: "",
-      description: ""
-    }
-    const currentEducation = Array.isArray(formData.education) ? formData.education : []
-    updateFormField('education', [...currentEducation, newEducation])
-  }
+      description: "",
+    };
+    const currentEducation = Array.isArray(formData.education)
+      ? formData.education
+      : [];
+    updateFormField("education", [...currentEducation, newEducation]);
+  };
 
   const updateEducation = (id: string, field: keyof Education, value: any) => {
-    const currentEducation = Array.isArray(formData.education) ? formData.education : []
-    const updated = currentEducation.map(edu => 
+    const currentEducation = Array.isArray(formData.education)
+      ? formData.education
+      : [];
+    const updated = currentEducation.map((edu) =>
       edu.id === id ? { ...edu, [field]: value } : edu
-    )
-    updateFormField('education', updated)
-  }
+    );
+    updateFormField("education", updated);
+  };
 
   const removeEducation = (id: string) => {
-    const currentEducation = Array.isArray(formData.education) ? formData.education : []
-    const updated = currentEducation.filter(edu => edu.id !== id)
-    updateFormField('education', updated)
-  }
+    const currentEducation = Array.isArray(formData.education)
+      ? formData.education
+      : [];
+    const updated = currentEducation.filter((edu) => edu.id !== id);
+    updateFormField("education", updated);
+  };
 
   const addProject = () => {
     const newProject: Project = {
@@ -333,118 +388,127 @@ export function ProfilePage() {
       technologies: [],
       url: "",
       startDate: "",
-      endDate: ""
-    }
-    const currentProjects = Array.isArray(formData.projects) ? formData.projects : []
-    updateFormField('projects', [...currentProjects, newProject])
-  }
+      endDate: "",
+    };
+    const currentProjects = Array.isArray(formData.projects)
+      ? formData.projects
+      : [];
+    updateFormField("projects", [...currentProjects, newProject]);
+  };
 
   const updateProject = (id: string, field: keyof Project, value: any) => {
-    const currentProjects = Array.isArray(formData.projects) ? formData.projects : []
-    const updated = currentProjects.map(proj => 
+    const currentProjects = Array.isArray(formData.projects)
+      ? formData.projects
+      : [];
+    const updated = currentProjects.map((proj) =>
       proj.id === id ? { ...proj, [field]: value } : proj
-    )
-    updateFormField('projects', updated)
-  }
+    );
+    updateFormField("projects", updated);
+  };
 
   const removeProject = (id: string) => {
-    const currentProjects = Array.isArray(formData.projects) ? formData.projects : []
-    const updated = currentProjects.filter(proj => proj.id !== id)
-    updateFormField('projects', updated)
-  }
+    const currentProjects = Array.isArray(formData.projects)
+      ? formData.projects
+      : [];
+    const updated = currentProjects.filter((proj) => proj.id !== id);
+    updateFormField("projects", updated);
+  };
 
   const downloadResume = () => {
     // Create resume content from profile data
-    const resumeContent = generateResumeContent(formData)
-    
+    const resumeContent = generateResumeContent(formData);
+
     // Create and download the resume file
-    const blob = new Blob([resumeContent], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${formData.fullName || 'Resume'}_Resume.txt`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([resumeContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${formData.fullName || "Resume"}_Resume.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const generateResumeContent = (profile: UserProfile): string => {
-    let content = ''
-    
+    let content = "";
+
     // Header
-    content += `${profile.fullName}\n`
-    content += `${profile.email} | ${profile.phone} | ${profile.location}\n`
-    if (profile.linkedinUrl) content += `LinkedIn: ${profile.linkedinUrl}\n`
-    if (profile.githubUrl) content += `GitHub: ${profile.githubUrl}\n`
-    if (profile.portfolioUrl) content += `Portfolio: ${profile.portfolioUrl}\n`
-    content += '\n'
-    
+    content += `${profile.fullName}\n`;
+    content += `${profile.email} | ${profile.phone} | ${profile.location}\n`;
+    if (profile.linkedinUrl) content += `LinkedIn: ${profile.linkedinUrl}\n`;
+    if (profile.githubUrl) content += `GitHub: ${profile.githubUrl}\n`;
+    if (profile.portfolioUrl) content += `Portfolio: ${profile.portfolioUrl}\n`;
+    content += "\n";
+
     // Professional Summary
     if (profile.professionalSummary) {
-      content += 'PROFESSIONAL SUMMARY\n'
-      content += '===================\n'
-      content += `${profile.professionalSummary}\n\n`
+      content += "PROFESSIONAL SUMMARY\n";
+      content += "===================\n";
+      content += `${profile.professionalSummary}\n\n`;
     }
-    
+
     // Skills
     if (profile.skills.length > 0) {
-      content += 'TECHNICAL SKILLS\n'
-      content += '================\n'
-      content += `${profile.skills.join(', ')}\n\n`
+      content += "TECHNICAL SKILLS\n";
+      content += "================\n";
+      content += `${profile.skills.join(", ")}\n\n`;
     }
-    
+
     // Work Experience
-    if (Array.isArray(profile.workExperience) && profile.workExperience.length > 0) {
-      content += 'WORK EXPERIENCE\n'
-      content += '===============\n'
-      profile.workExperience.forEach(exp => {
-        content += `${exp.jobTitle} | ${exp.company} | ${exp.location}\n`
-        const endDate = exp.current ? 'Present' : exp.endDate
-        content += `${exp.startDate} - ${endDate}\n`
+    if (
+      Array.isArray(profile.workExperience) &&
+      profile.workExperience.length > 0
+    ) {
+      content += "WORK EXPERIENCE\n";
+      content += "===============\n";
+      profile.workExperience.forEach((exp) => {
+        content += `${exp.jobTitle} | ${exp.company} | ${exp.location}\n`;
+        const endDate = exp.current ? "Present" : exp.endDate;
+        content += `${exp.startDate} - ${endDate}\n`;
         if (exp.description) {
-          content += `${exp.description}\n`
+          content += `${exp.description}\n`;
         }
-        content += '\n'
-      })
+        content += "\n";
+      });
     }
-    
+
     // Education
     if (Array.isArray(profile.education) && profile.education.length > 0) {
-      content += 'EDUCATION\n'
-      content += '=========\n'
-      profile.education.forEach(edu => {
-        content += `${edu.degree} | ${edu.institution} | ${edu.location}\n`
-        content += `Graduated: ${edu.graduationDate}`
-        if (edu.gpa) content += ` | GPA: ${edu.gpa}`
-        content += '\n'
+      content += "EDUCATION\n";
+      content += "=========\n";
+      profile.education.forEach((edu) => {
+        content += `${edu.degree} | ${edu.institution} | ${edu.location}\n`;
+        content += `Graduated: ${edu.graduationDate}`;
+        if (edu.gpa) content += ` | GPA: ${edu.gpa}`;
+        content += "\n";
         if (edu.description) {
-          content += `${edu.description}\n`
+          content += `${edu.description}\n`;
         }
-        content += '\n'
-      })
+        content += "\n";
+      });
     }
-    
+
     // Projects
     if (Array.isArray(profile.projects) && profile.projects.length > 0) {
-      content += 'PROJECTS\n'
-      content += '========\n'
-      profile.projects.forEach(project => {
-        content += `${project.name}\n`
-        if (project.url) content += `URL: ${project.url}\n`
-        content += `${project.startDate} - ${project.endDate}\n`
+      content += "PROJECTS\n";
+      content += "========\n";
+      profile.projects.forEach((project) => {
+        content += `${project.name}\n`;
+        if (project.url) content += `URL: ${project.url}\n`;
+        content += `${project.startDate} - ${project.endDate}\n`;
         if (project.technologies.length > 0) {
-          content += `Technologies: ${project.technologies.join(', ')}\n`
+          content += `Technologies: ${project.technologies.join(", ")}\n`;
         }
         if (project.description) {
-          content += `${project.description}\n`
+          content += `${project.description}\n`;
         }
-        content += '\n'
-      })
+        content += "\n";
+      });
     }
-    
-    return content
-  }
+
+    return content;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -461,7 +525,9 @@ export function ProfilePage() {
               </Link>
               <div className="flex items-center space-x-2">
                 <Briefcase className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-semibold text-gray-900">Complete Profile</h1>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  Complete Profile
+                </h1>
               </div>
             </div>
             <UserMenu />
@@ -489,9 +555,14 @@ export function ProfilePage() {
                     <div className="flex items-center space-x-3">
                       <FileText className="h-8 w-8 text-green-600" />
                       <div>
-                        <p className="font-medium text-green-900">{profile.resumeFile.name}</p>
+                        <p className="font-medium text-green-900">
+                          {profile.resumeFile.name}
+                        </p>
                         <p className="text-sm text-green-700">
-                          Uploaded {profile.lastUpdated ? new Date(profile.lastUpdated).toLocaleDateString() : 'recently'}
+                          Uploaded{" "}
+                          {profile.lastUpdated
+                            ? new Date(profile.lastUpdated).toLocaleDateString()
+                            : "recently"}
                         </p>
                       </div>
                     </div>
@@ -500,22 +571,32 @@ export function ProfilePage() {
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>
-                      <Button 
-                        variant="destructive" 
+                      <Button
+                        variant="destructive"
                         size="sm"
                         onClick={() => {
-                          const updatedProfile = { ...profile, resumeFile: undefined, resumeText: undefined }
-                          saveProfile(updatedProfile)
+                          const updatedProfile = {
+                            ...profile,
+                            resumeFile: undefined,
+                            resumeText: undefined,
+                          };
+                          saveProfile(updatedProfile);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                  <ResumeUpload onFileUpload={handleResumeUpload} isAnalyzing={isAnalyzing} />
+                  <ResumeUpload
+                    onFileUpload={handleResumeUpload}
+                    isAnalyzing={isAnalyzing}
+                  />
                 </div>
               ) : (
-                <ResumeUpload onFileUpload={handleResumeUpload} isAnalyzing={isAnalyzing} />
+                <ResumeUpload
+                  onFileUpload={handleResumeUpload}
+                  isAnalyzing={isAnalyzing}
+                />
               )}
             </CardContent>
           </Card>
@@ -535,7 +616,9 @@ export function ProfilePage() {
                   <Input
                     id="fullName"
                     value={formData.fullName}
-                    onChange={(e) => updateFormField('fullName', e.target.value)}
+                    onChange={(e) =>
+                      updateFormField("fullName", e.target.value)
+                    }
                     placeholder="John Doe"
                   />
                 </div>
@@ -545,7 +628,7 @@ export function ProfilePage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => updateFormField('email', e.target.value)}
+                    onChange={(e) => updateFormField("email", e.target.value)}
                     placeholder="john@example.com"
                   />
                 </div>
@@ -556,7 +639,7 @@ export function ProfilePage() {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => updateFormField('phone', e.target.value)}
+                    onChange={(e) => updateFormField("phone", e.target.value)}
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
@@ -565,7 +648,9 @@ export function ProfilePage() {
                   <Input
                     id="location"
                     value={formData.location}
-                    onChange={(e) => updateFormField('location', e.target.value)}
+                    onChange={(e) =>
+                      updateFormField("location", e.target.value)
+                    }
                     placeholder="San Francisco, CA"
                   />
                 </div>
@@ -576,7 +661,9 @@ export function ProfilePage() {
                   <Input
                     id="linkedinUrl"
                     value={formData.linkedinUrl}
-                    onChange={(e) => updateFormField('linkedinUrl', e.target.value)}
+                    onChange={(e) =>
+                      updateFormField("linkedinUrl", e.target.value)
+                    }
                     placeholder="https://linkedin.com/in/johndoe"
                   />
                 </div>
@@ -585,7 +672,9 @@ export function ProfilePage() {
                   <Input
                     id="githubUrl"
                     value={formData.githubUrl}
-                    onChange={(e) => updateFormField('githubUrl', e.target.value)}
+                    onChange={(e) =>
+                      updateFormField("githubUrl", e.target.value)
+                    }
                     placeholder="https://github.com/johndoe"
                   />
                 </div>
@@ -594,7 +683,9 @@ export function ProfilePage() {
                   <Input
                     id="portfolioUrl"
                     value={formData.portfolioUrl}
-                    onChange={(e) => updateFormField('portfolioUrl', e.target.value)}
+                    onChange={(e) =>
+                      updateFormField("portfolioUrl", e.target.value)
+                    }
                     placeholder="https://johndoe.com"
                   />
                 </div>
@@ -614,7 +705,9 @@ export function ProfilePage() {
                   id="professionalSummary"
                   placeholder="Write a brief professional summary highlighting your key skills and experience..."
                   value={formData.professionalSummary}
-                  onChange={(e) => updateFormField('professionalSummary', e.target.value)}
+                  onChange={(e) =>
+                    updateFormField("professionalSummary", e.target.value)
+                  }
                   rows={4}
                 />
               </div>
@@ -630,7 +723,7 @@ export function ProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <SkillsExtractor 
+              <SkillsExtractor
                 skills={formData.skills}
                 onAddSkill={addSkill}
                 onRemoveSkill={removeSkill}
@@ -652,84 +745,130 @@ export function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Array.isArray(formData.workExperience) && formData.workExperience.map((exp, index) => (
-                <div key={exp.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Experience #{index + 1}</h4>
-                    <Button 
-                      onClick={() => removeWorkExperience(exp.id)}
-                      variant="destructive" 
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Job Title</Label>
-                      <Input
-                        value={exp.jobTitle}
-                        onChange={(e) => updateWorkExperience(exp.id, 'jobTitle', e.target.value)}
-                        placeholder="Senior Software Engineer"
+              {Array.isArray(formData.workExperience) &&
+                formData.workExperience.map((exp, index) => (
+                  <div key={exp.id} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Experience #{index + 1}</h4>
+                      <Button
+                        onClick={() => removeWorkExperience(exp.id)}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Job Title</Label>
+                        <Input
+                          value={exp.jobTitle}
+                          onChange={(e) =>
+                            updateWorkExperience(
+                              exp.id,
+                              "jobTitle",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Senior Software Engineer"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Company</Label>
+                        <Input
+                          value={exp.company}
+                          onChange={(e) =>
+                            updateWorkExperience(
+                              exp.id,
+                              "company",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Tech Corp Inc."
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Location</Label>
+                        <Input
+                          value={exp.location}
+                          onChange={(e) =>
+                            updateWorkExperience(
+                              exp.id,
+                              "location",
+                              e.target.value
+                            )
+                          }
+                          placeholder="San Francisco, CA"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Start Date</Label>
+                        <Input
+                          type="date"
+                          value={exp.startDate}
+                          onChange={(e) =>
+                            updateWorkExperience(
+                              exp.id,
+                              "startDate",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date</Label>
+                        <Input
+                          type="date"
+                          value={exp.endDate}
+                          onChange={(e) =>
+                            updateWorkExperience(
+                              exp.id,
+                              "endDate",
+                              e.target.value
+                            )
+                          }
+                          disabled={exp.current}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`current-${exp.id}`}
+                        checked={exp.current}
+                        onChange={(e) =>
+                          updateWorkExperience(
+                            exp.id,
+                            "current",
+                            e.target.checked
+                          )
+                        }
                       />
+                      <Label htmlFor={`current-${exp.id}`}>
+                        Currently working here
+                      </Label>
                     </div>
                     <div className="space-y-2">
-                      <Label>Company</Label>
-                      <Input
-                        value={exp.company}
-                        onChange={(e) => updateWorkExperience(exp.id, 'company', e.target.value)}
-                        placeholder="Tech Corp Inc."
+                      <Label>Description</Label>
+                      <Textarea
+                        value={exp.description}
+                        onChange={(e) =>
+                          updateWorkExperience(
+                            exp.id,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Describe your responsibilities and achievements..."
+                        rows={3}
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <Input
-                        value={exp.location}
-                        onChange={(e) => updateWorkExperience(exp.id, 'location', e.target.value)}
-                        placeholder="San Francisco, CA"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <Input
-                        type="date"
-                        value={exp.startDate}
-                        onChange={(e) => updateWorkExperience(exp.id, 'startDate', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>End Date</Label>
-                      <Input
-                        type="date"
-                        value={exp.endDate}
-                        onChange={(e) => updateWorkExperience(exp.id, 'endDate', e.target.value)}
-                        disabled={exp.current}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`current-${exp.id}`}
-                      checked={exp.current}
-                      onChange={(e) => updateWorkExperience(exp.id, 'current', e.target.checked)}
-                    />
-                    <Label htmlFor={`current-${exp.id}`}>Currently working here</Label>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={exp.description}
-                      onChange={(e) => updateWorkExperience(exp.id, 'description', e.target.value)}
-                      placeholder="Describe your responsibilities and achievements..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              ))}
-              {(!Array.isArray(formData.workExperience) || formData.workExperience.length === 0) && (
+                ))}
+              {(!Array.isArray(formData.workExperience) ||
+                formData.workExperience.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Building className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No work experience added yet</p>
@@ -752,74 +891,96 @@ export function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Array.isArray(formData.education) && formData.education.map((edu, index) => (
-                <div key={edu.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Education #{index + 1}</h4>
-                    <Button 
-                      onClick={() => removeEducation(edu.id)}
-                      variant="destructive" 
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
+              {Array.isArray(formData.education) &&
+                formData.education.map((edu, index) => (
+                  <div key={edu.id} className="border rounded-lg p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Education #{index + 1}</h4>
+                      <Button
+                        onClick={() => removeEducation(edu.id)}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Degree</Label>
+                        <Input
+                          value={edu.degree}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "degree", e.target.value)
+                          }
+                          placeholder="Bachelor of Science in Computer Science"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Institution</Label>
+                        <Input
+                          value={edu.institution}
+                          onChange={(e) =>
+                            updateEducation(
+                              edu.id,
+                              "institution",
+                              e.target.value
+                            )
+                          }
+                          placeholder="University of Technology"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Location</Label>
+                        <Input
+                          value={edu.location}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "location", e.target.value)
+                          }
+                          placeholder="Boston, MA"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Graduation Date</Label>
+                        <Input
+                          type="date"
+                          value={edu.graduationDate}
+                          onChange={(e) =>
+                            updateEducation(
+                              edu.id,
+                              "graduationDate",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>GPA (Optional)</Label>
+                        <Input
+                          value={edu.gpa || ""}
+                          onChange={(e) =>
+                            updateEducation(edu.id, "gpa", e.target.value)
+                          }
+                          placeholder="3.8"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={edu.description}
+                        onChange={(e) =>
+                          updateEducation(edu.id, "description", e.target.value)
+                        }
+                        placeholder="Relevant coursework, achievements, activities..."
+                        rows={2}
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Degree</Label>
-                      <Input
-                        value={edu.degree}
-                        onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                        placeholder="Bachelor of Science in Computer Science"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Institution</Label>
-                      <Input
-                        value={edu.institution}
-                        onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
-                        placeholder="University of Technology"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <Input
-                        value={edu.location}
-                        onChange={(e) => updateEducation(edu.id, 'location', e.target.value)}
-                        placeholder="Boston, MA"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Graduation Date</Label>
-                      <Input
-                        type="date"
-                        value={edu.graduationDate}
-                        onChange={(e) => updateEducation(edu.id, 'graduationDate', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>GPA (Optional)</Label>
-                      <Input
-                        value={edu.gpa || ''}
-                        onChange={(e) => updateEducation(edu.id, 'gpa', e.target.value)}
-                        placeholder="3.8"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={edu.description}
-                      onChange={(e) => updateEducation(edu.id, 'description', e.target.value)}
-                      placeholder="Relevant coursework, achievements, activities..."
-                      rows={2}
-                    />
-                  </div>
-                </div>
-              ))}
-              {(!Array.isArray(formData.education) || formData.education.length === 0) && (
+                ))}
+              {(!Array.isArray(formData.education) ||
+                formData.education.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <GraduationCap className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No education added yet</p>
@@ -842,74 +1003,103 @@ export function ProfilePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {Array.isArray(formData.projects) && formData.projects.map((project, index) => (
-                <div key={project.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Project #{index + 1}</h4>
-                    <Button 
-                      onClick={() => removeProject(project.id)}
-                      variant="destructive" 
-                      size="sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array.isArray(formData.projects) &&
+                formData.projects.map((project, index) => (
+                  <div
+                    key={project.id}
+                    className="border rounded-lg p-4 space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Project #{index + 1}</h4>
+                      <Button
+                        onClick={() => removeProject(project.id)}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Project Name</Label>
+                        <Input
+                          value={project.name}
+                          onChange={(e) =>
+                            updateProject(project.id, "name", e.target.value)
+                          }
+                          placeholder="E-commerce Platform"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Project URL (Optional)</Label>
+                        <Input
+                          value={project.url || ""}
+                          onChange={(e) =>
+                            updateProject(project.id, "url", e.target.value)
+                          }
+                          placeholder="https://github.com/johndoe/project"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Start Date</Label>
+                        <Input
+                          type="date"
+                          value={project.startDate}
+                          onChange={(e) =>
+                            updateProject(
+                              project.id,
+                              "startDate",
+                              e.target.value
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date</Label>
+                        <Input
+                          type="date"
+                          value={project.endDate}
+                          onChange={(e) =>
+                            updateProject(project.id, "endDate", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
-                      <Label>Project Name</Label>
+                      <Label>Technologies Used</Label>
                       <Input
-                        value={project.name}
-                        onChange={(e) => updateProject(project.id, 'name', e.target.value)}
-                        placeholder="E-commerce Platform"
+                        value={project.technologies.join(", ")}
+                        onChange={(e) =>
+                          updateProject(
+                            project.id,
+                            "technologies",
+                            e.target.value.split(", ").filter((t) => t.trim())
+                          )
+                        }
+                        placeholder="React, Node.js, MongoDB, AWS"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Project URL (Optional)</Label>
-                      <Input
-                        value={project.url || ''}
-                        onChange={(e) => updateProject(project.id, 'url', e.target.value)}
-                        placeholder="https://github.com/johndoe/project"
+                      <Label>Description</Label>
+                      <Textarea
+                        value={project.description}
+                        onChange={(e) =>
+                          updateProject(
+                            project.id,
+                            "description",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Describe the project, your role, and key achievements..."
+                        rows={3}
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <Input
-                        type="date"
-                        value={project.startDate}
-                        onChange={(e) => updateProject(project.id, 'startDate', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>End Date</Label>
-                      <Input
-                        type="date"
-                        value={project.endDate}
-                        onChange={(e) => updateProject(project.id, 'endDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Technologies Used</Label>
-                    <Input
-                      value={project.technologies.join(', ')}
-                      onChange={(e) => updateProject(project.id, 'technologies', e.target.value.split(', ').filter(t => t.trim()))}
-                      placeholder="React, Node.js, MongoDB, AWS"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={project.description}
-                      onChange={(e) => updateProject(project.id, 'description', e.target.value)}
-                      placeholder="Describe the project, your role, and key achievements..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              ))}
-              {(!Array.isArray(formData.projects) || formData.projects.length === 0) && (
+                ))}
+              {(!Array.isArray(formData.projects) ||
+                formData.projects.length === 0) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No projects added yet</p>
@@ -920,7 +1110,7 @@ export function ProfilePage() {
 
           {/* Save and Download Buttons */}
           <div className="flex justify-end space-x-4">
-            <Button 
+            <Button
               onClick={downloadResume}
               variant="outline"
               className="min-w-[140px]"
@@ -930,7 +1120,7 @@ export function ProfilePage() {
               <FileDown className="h-4 w-4 mr-2" />
               Download Resume
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               disabled={!hasUnsavedChanges}
               className="min-w-[120px]"
@@ -953,18 +1143,35 @@ export function ProfilePage() {
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <Badge variant={profile.skills.length > 0 ? "default" : "secondary"}>
-                    {profile.skills.length > 0 ? "✓" : "○"} Skills ({profile.skills.length})
+                  <Badge
+                    variant={
+                      profile.skills.length > 0 ? "default" : "secondary"
+                    }
+                  >
+                    {profile.skills.length > 0 ? "✓" : "○"} Skills (
+                    {profile.skills.length})
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <Badge variant={profile.workExperience.length > 0 ? "default" : "secondary"}>
-                    {profile.workExperience.length > 0 ? "✓" : "○"} Experience ({profile.workExperience.length})
+                  <Badge
+                    variant={
+                      profile.workExperience.length > 0
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {profile.workExperience.length > 0 ? "✓" : "○"} Experience (
+                    {profile.workExperience.length})
                   </Badge>
                 </div>
                 <div className="text-center">
-                  <Badge variant={profile.education.length > 0 ? "default" : "secondary"}>
-                    {profile.education.length > 0 ? "✓" : "○"} Education ({profile.education.length})
+                  <Badge
+                    variant={
+                      profile.education.length > 0 ? "default" : "secondary"
+                    }
+                  >
+                    {profile.education.length > 0 ? "✓" : "○"} Education (
+                    {profile.education.length})
                   </Badge>
                 </div>
               </div>
@@ -973,11 +1180,13 @@ export function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Enhanced resume data extraction
-async function extractComprehensiveDataFromPDF(file: File): Promise<Partial<UserProfile>> {
+async function extractComprehensiveDataFromPDF(
+  file: File
+): Promise<Partial<UserProfile>> {
   return new Promise((resolve) => {
     setTimeout(() => {
       // Simulate comprehensive data extraction from PDF
@@ -989,83 +1198,103 @@ async function extractComprehensiveDataFromPDF(file: File): Promise<Partial<User
         linkedinUrl: "https://linkedin.com/in/johndoe",
         githubUrl: "https://github.com/johndoe",
         portfolioUrl: "https://johndoe.dev",
-        
-        professionalSummary: "Experienced Senior Software Engineer with 5+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of leading development teams and delivering scalable web applications.",
-        
+
+        professionalSummary:
+          "Experienced Senior Software Engineer with 5+ years of expertise in full-stack development, specializing in React, Node.js, and cloud technologies. Proven track record of leading development teams and delivering scalable web applications.",
+
         skills: [
-          'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'AWS', 
-          'Docker', 'Kubernetes', 'MongoDB', 'PostgreSQL', 'Git', 'Agile'
+          "React",
+          "TypeScript",
+          "JavaScript",
+          "Node.js",
+          "Python",
+          "AWS",
+          "Docker",
+          "Kubernetes",
+          "MongoDB",
+          "PostgreSQL",
+          "Git",
+          "Agile",
         ],
-        
+
         workExperience: [
           {
-            id: '1',
-            jobTitle: 'Senior Software Engineer',
-            company: 'Tech Corp Inc.',
-            location: 'San Francisco, CA',
-            startDate: '2021-03-01',
-            endDate: '',
+            id: "1",
+            jobTitle: "Senior Software Engineer",
+            company: "Tech Corp Inc.",
+            location: "San Francisco, CA",
+            startDate: "2021-03-01",
+            endDate: "",
             current: true,
-            description: 'Led development of microservices architecture serving 1M+ users. Implemented CI/CD pipelines reducing deployment time by 60%. Mentored junior developers and conducted code reviews.'
+            description:
+              "Led development of microservices architecture serving 1M+ users. Implemented CI/CD pipelines reducing deployment time by 60%. Mentored junior developers and conducted code reviews.",
           },
           {
-            id: '2',
-            jobTitle: 'Full Stack Developer',
-            company: 'StartupXYZ',
-            location: 'San Francisco, CA',
-            startDate: '2019-06-01',
-            endDate: '2021-02-28',
+            id: "2",
+            jobTitle: "Full Stack Developer",
+            company: "StartupXYZ",
+            location: "San Francisco, CA",
+            startDate: "2019-06-01",
+            endDate: "2021-02-28",
             current: false,
-            description: 'Built responsive web applications using React and Node.js. Integrated third-party APIs and payment systems. Collaborated with design team to implement pixel-perfect UI components.'
-          }
+            description:
+              "Built responsive web applications using React and Node.js. Integrated third-party APIs and payment systems. Collaborated with design team to implement pixel-perfect UI components.",
+          },
         ],
-        
+
         education: [
           {
-            id: '1',
-            degree: 'Bachelor of Science in Computer Science',
-            institution: 'University of California, Berkeley',
-            location: 'Berkeley, CA',
-            graduationDate: '2019-05-15',
-            gpa: '3.8',
-            description: 'Relevant coursework: Data Structures, Algorithms, Software Engineering, Database Systems, Machine Learning'
-          }
+            id: "1",
+            degree: "Bachelor of Science in Computer Science",
+            institution: "University of California, Berkeley",
+            location: "Berkeley, CA",
+            graduationDate: "2019-05-15",
+            gpa: "3.8",
+            description:
+              "Relevant coursework: Data Structures, Algorithms, Software Engineering, Database Systems, Machine Learning",
+          },
         ],
-        
+
         projects: [
           {
-            id: '1',
-            name: 'E-commerce Platform',
-            description: 'Built a full-stack e-commerce platform with React, Node.js, and MongoDB. Implemented features like user authentication, payment processing, and inventory management.',
-            technologies: ['React', 'Node.js', 'MongoDB', 'Stripe API', 'AWS'],
-            url: 'https://github.com/johndoe/ecommerce-platform',
-            startDate: '2020-01-01',
-            endDate: '2020-06-01'
+            id: "1",
+            name: "E-commerce Platform",
+            description:
+              "Built a full-stack e-commerce platform with React, Node.js, and MongoDB. Implemented features like user authentication, payment processing, and inventory management.",
+            technologies: ["React", "Node.js", "MongoDB", "Stripe API", "AWS"],
+            url: "https://github.com/johndoe/ecommerce-platform",
+            startDate: "2020-01-01",
+            endDate: "2020-06-01",
           },
           {
-            id: '2',
-            name: 'Task Management App',
-            description: 'Developed a collaborative task management application with real-time updates using Socket.io. Features include drag-and-drop interface, team collaboration, and progress tracking.',
-            technologies: ['React', 'Socket.io', 'Express.js', 'PostgreSQL'],
-            url: 'https://github.com/johndoe/task-manager',
-            startDate: '2020-07-01',
-            endDate: '2020-12-01'
-          }
+            id: "2",
+            name: "Task Management App",
+            description:
+              "Developed a collaborative task management application with real-time updates using Socket.io. Features include drag-and-drop interface, team collaboration, and progress tracking.",
+            technologies: ["React", "Socket.io", "Express.js", "PostgreSQL"],
+            url: "https://github.com/johndoe/task-manager",
+            startDate: "2020-07-01",
+            endDate: "2020-12-01",
+          },
         ],
-        
+
         certifications: [
           {
-            id: '1',
-            name: 'AWS Certified Solutions Architect',
-            issuer: 'Amazon Web Services',
-            issueDate: '2022-03-15',
-            expiryDate: '2025-03-15',
-            credentialId: 'AWS-SAA-123456'
-          }
+            id: "1",
+            name: "AWS Certified Solutions Architect",
+            issuer: "Amazon Web Services",
+            issueDate: "2022-03-15",
+            expiryDate: "2025-03-15",
+            credentialId: "AWS-SAA-123456",
+          },
         ],
-        
-        languages: ['English (Native)', 'Spanish (Conversational)', 'French (Basic)'],
-        
+
+        languages: [
+          "English (Native)",
+          "Spanish (Conversational)",
+          "French (Basic)",
+        ],
+
         resumeText: `
           John Doe
           Senior Software Engineer
@@ -1110,10 +1339,10 @@ async function extractComprehensiveDataFromPDF(file: File): Promise<Partial<User
           
           CERTIFICATIONS
           AWS Certified Solutions Architect | Amazon Web Services | 2022
-        `
-      }
-      
-      resolve(extractedData)
-    }, 3000) // Simulate longer processing time for comprehensive extraction
-  })
+        `,
+      };
+
+      resolve(extractedData);
+    }, 3000); // Simulate longer processing time for comprehensive extraction
+  });
 }

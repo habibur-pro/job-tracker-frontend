@@ -35,20 +35,6 @@ export default function LoginPage({ err }: { err: string }) {
   const [activeTab, setActiveTab] = useState("signin");
   const router = useRouter();
 
-  useEffect(() => {
-    getSession().then((session) => {
-      if (session) {
-        router.push("/dashboard");
-      }
-    });
-
-    // Check for error in URL params
-    const errorParam = err;
-    if (errorParam) {
-      setError("Authentication failed. Please try again.");
-    }
-  }, [router, err]);
-
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
