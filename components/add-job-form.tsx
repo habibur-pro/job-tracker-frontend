@@ -1,282 +1,377 @@
-"use client"
+"use client";
+import React, { useState, useRef, useMemo } from "react";
+import JoditEditor from "jodit-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Briefcase, ArrowLeft, Upload, X, Image } from 'lucide-react'
-import Link from "next/link"
-import { RichTextEditor } from "./rich-text-editor"
-import { FileUpload } from "./file-upload"
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { JobType, JobLocation, JobStatus } from "@/enum";
+import TextWriter from "./ui/TextWriter";
+import { useAddJobMutation } from "@/redux/api/jobApi";
+import { Label } from "./ui/label";
+
+// ✅ Zod schema for validation (matching JobSchema)
+const JobFormSchema = z.object({
+  jobTitle: z.string().min(2, "Job title is required"),
+  companyName: z.string().min(2, "Company name is required"),
+  companyWebsite: z.string().url("Invalid company website URL"),
+  jobPostUrl: z.string().url("Invalid job post URL"),
+  salary: z.string().min(1, "Salary is required"),
+  expectedSalary: z.string().min(1, "Expected salary is required"),
+  deadline: z.string().min(1, "Deadline is required"),
+  type: z.nativeEnum(JobType, {
+    errorMap: () => ({ message: "Job type is required" }),
+  }),
+  location: z.nativeEnum(JobLocation, {
+    errorMap: () => ({ message: "Location is required" }),
+  }),
+  skills: z.string().min(1, "At least one skill is required"),
+  experience: z.string().min(1, "Experience is required"),
+  details: z.string().optional(),
+  status: z.nativeEnum(JobStatus).default(JobStatus.LISTED),
+});
+
+type JobFormValues = z.infer<typeof JobFormSchema>;
 
 export function AddJobForm() {
-  const router = useRouter()
-  const { data: session } = useSession()
-  const [formData, setFormData] = useState({
-    title: "",
-    company: "",
-    companyWebsite: "",
-    jobUrl: "",
-    offeredSalary: "",
-    expectedSalary: "",
-    deadline: "",
-    notes: "",
-    status: "wishlist" as "wishlist" | "applied"
-  })
-  const [companyLogo, setCompanyLogo] = useState<File | null>(null)
-  const [companyImages, setCompanyImages] = useState<File[]>([])
+  const [jobDetails, setJobDetails] = useState("");
+  const router = useRouter();
+  const session = useSession();
+  console.log("session", session);
+  const [addJob] = useAddJobMutation();
+  const form = useForm<JobFormValues>({
+    resolver: zodResolver(JobFormSchema),
+    defaultValues: {
+      jobTitle: "",
+      companyName: "",
+      companyWebsite: "",
+      jobPostUrl: "",
+      salary: "",
+      expectedSalary: "",
+      deadline: "",
+      type: undefined,
+      location: undefined,
+      skills: "",
+      experience: "",
+      details: "",
+      status: JobStatus.LISTED,
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const userEmail = session?.user?.email || 'demo_user'
-    
-    // Create new job object
-    const newJob = {
-      ...formData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      userId: userEmail,
-      companyLogo: companyLogo ? URL.createObjectURL(companyLogo) : "",
-      companyImages: companyImages.map(img => URL.createObjectURL(img))
+  async function onSubmit(values: JobFormValues) {
+    const payload = {
+      ...values,
+      userId: session?.user?.email ?? "50C2E218",
+      skills: values.skills.split(",").map((s) => s.trim()),
+      details: jobDetails,
+    };
+
+    // toast.success("Job Created!", {
+    //   description: (
+    //     <pre className="mt-2 w-[350px] rounded-md bg-neutral-950 p-4">
+    //       <code className="text-white">{JSON.stringify(payload, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
+
+    // TODO: Call your API here (instead of localStorage)
+    // await fetch("/api/jobs", { method: "POST", body: JSON.stringify(payload) })
+
+    // router.push("/dashboard");
+
+    try {
+      await addJob(payload).unwrap();
+    } catch (error) {
+      console.log("error");
     }
-    
-    // Get existing jobs from localStorage for this user
-    const userKey = `jobs_${userEmail}`
-    const existingJobs = JSON.parse(localStorage.getItem(userKey) || "[]")
-    
-    // Add new job and save back to localStorage
-    const updatedJobs = [...existingJobs, newJob]
-    localStorage.setItem(userKey, JSON.stringify(updatedJobs))
-    
-    // Redirect to dashboard
-    router.push("/dashboard")
-  }
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleLogoUpload = (file: File) => {
-    setCompanyLogo(file)
-  }
-
-  const handleImagesUpload = (files: File[]) => {
-    setCompanyImages(prev => [...prev, ...files])
-  }
-
-  const removeImage = (index: number) => {
-    setCompanyImages(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="border-b bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add New Job</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Job Title & Company */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="jobTitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Title *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Frontend Developer" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Google" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Website & Job URL */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="companyWebsite"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Website *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://company.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="jobPostUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Post URL *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://company.com/jobs/123"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Salary */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="salary"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Offered Salary *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="$80,000 - $100,000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="expectedSalary"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected Salary *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="$90,000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Deadline */}
+              <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Application Deadline *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Type & Location */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Type *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.values(JobType).map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.values(JobLocation).map((loc) => (
+                            <SelectItem key={loc} value={loc}>
+                              {loc}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Skills */}
+              <FormField
+                control={form.control}
+                name="skills"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Skills *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="React, Node.js, MongoDB" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Enter skills separated by commas
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Experience */}
+              <FormField
+                control={form.control}
+                name="experience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Experience *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="3+ years in frontend development"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Status */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(JobStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Details */}
+              <div>
+                <Label className="">Details*</Label>
+                <div className="mt-2.5">
+                  <TextWriter
+                    placeholder="Write job description..."
+                    onChange={(value) => setJobDetails(value)}
+                  />
+                </div>
+              </div>
+              {/* Buttons */}
+              <div className="flex justify-end space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Cancel
                 </Button>
-              </Link>
-              <div className="flex items-center space-x-2">
-                <Briefcase className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-semibold text-gray-900">Add New Job</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Form */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Job Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleChange("title", e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="company">Company Name *</Label>
-                  <Input
-                    id="company"
-                    value={formData.company}
-                    onChange={(e) => handleChange("company", e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Company Logo */}
-              <div className="space-y-2">
-                <Label>Company Logo (Optional)</Label>
-                <FileUpload
-                  onFileSelect={handleLogoUpload}
-                  accept="image/*"
-                  maxFiles={1}
-                  currentFile={companyLogo}
-                />
-                {companyLogo && (
-                  <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                    <Image className="h-4 w-4" />
-                    <span className="text-sm">{companyLogo.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCompanyLogo(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Company Images */}
-              <div className="space-y-2">
-                <Label>Company Images (Optional)</Label>
-                <FileUpload
-                  onFileSelect={(files) => handleImagesUpload(Array.isArray(files) ? files : [files])}
-                  accept="image/*"
-                  maxFiles={5}
-                  multiple
-                />
-                {companyImages.length > 0 && (
-                  <div className="space-y-2">
-                    {companyImages.map((image, index) => (
-                      <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                        <Image className="h-4 w-4" />
-                        <span className="text-sm">{image.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* URLs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="companyWebsite">Company Website</Label>
-                  <Input
-                    id="companyWebsite"
-                    type="url"
-                    placeholder="https://company.com"
-                    value={formData.companyWebsite}
-                    onChange={(e) => handleChange("companyWebsite", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="jobUrl">Job Listing URL</Label>
-                  <Input
-                    id="jobUrl"
-                    type="url"
-                    placeholder="https://company.com/jobs/123"
-                    value={formData.jobUrl}
-                    onChange={(e) => handleChange("jobUrl", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Salary Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="offeredSalary">Offered Salary</Label>
-                  <Input
-                    id="offeredSalary"
-                    placeholder="$100,000 - $120,000"
-                    value={formData.offeredSalary}
-                    onChange={(e) => handleChange("offeredSalary", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="expectedSalary">Expected Salary</Label>
-                  <Input
-                    id="expectedSalary"
-                    placeholder="$110,000"
-                    value={formData.expectedSalary}
-                    onChange={(e) => handleChange("expectedSalary", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Deadline and Status */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="deadline">Application Deadline</Label>
-                  <Input
-                    id="deadline"
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => handleChange("deadline", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="wishlist">To Apply</SelectItem>
-                      <SelectItem value="applied">Applied</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Rich Text Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes">Job Description & Notes</Label>
-                <RichTextEditor
-                  value={formData.notes}
-                  onChange={(value) => handleChange("notes", value)}
-                  placeholder="Add detailed notes about this job opportunity..."
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4 pt-6">
-                <Link href="/dashboard">
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                </Link>
                 <Button type="submit">Add Job</Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      </div>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }
