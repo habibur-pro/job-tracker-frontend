@@ -1,175 +1,113 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Filter, Briefcase, CheckCircle, User } from 'lucide-react'
-import { JobCard } from "./job-card"
-import { JobDetailsModal } from "./job-details-modal"
-import Link from "next/link"
-import { useSession } from "next-auth/react"
-import { UserMenu } from "./user-menu"
-import { useRouter } from "next/navigation"
-
-export interface Job {
-  id: string
-  title: string
-  company: string
-  companyWebsite: string
-  jobUrl: string
-  offeredSalary: string
-  expectedSalary: string
-  deadline: string
-  notes: string
-  status: "wishlist" | "applied"
-  createdAt: string
-  userId?: string
-}
-
-const initialJobs: Job[] = [
-  {
-    id: "1",
-    title: "Senior Frontend Developer",
-    company: "TechCorp Inc.",
-    companyWebsite: "https://techcorp.com",
-    jobUrl: "https://techcorp.com/careers/senior-frontend",
-    offeredSalary: "$120,000 - $150,000",
-    expectedSalary: "$140,000",
-    deadline: "2024-02-15",
-    notes: "Great company culture, remote-first. Looking for React/Next.js expertise. Strong TypeScript skills required. Experience with AWS and Docker preferred.",
-    status: "wishlist",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "2",
-    title: "Full Stack Engineer",
-    company: "StartupXYZ",
-    companyWebsite: "https://startupxyz.com",
-    jobUrl: "https://startupxyz.com/jobs/fullstack",
-    offeredSalary: "$100,000 - $130,000",
-    expectedSalary: "$125,000",
-    deadline: "2024-02-20",
-    notes: "Early stage startup, equity options available. Need to prepare for technical interview. Python and JavaScript required. MongoDB experience is a plus.",
-    status: "applied",
-    createdAt: "2024-01-10"
-  },
-  {
-    id: "3",
-    title: "React Developer",
-    company: "Digital Agency Pro",
-    companyWebsite: "https://digitalagencypro.com",
-    jobUrl: "https://digitalagencypro.com/careers/react-dev",
-    offeredSalary: "$90,000 - $110,000",
-    expectedSalary: "$105,000",
-    deadline: "2024-02-10",
-    notes: "Client-facing role, need strong communication skills. Portfolio review required. React, HTML, CSS, and JavaScript expertise needed.",
-    status: "wishlist",
-    createdAt: "2024-01-12"
-  }
-]
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Plus,
+  Search,
+  Filter,
+  Briefcase,
+  CheckCircle,
+  User,
+  XCircle,
+} from "lucide-react";
+import { JobCard } from "./job-card";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { UserMenu } from "./user-menu";
+import { useRouter } from "next/navigation";
+import { useGetMyJobsQuery } from "@/redux/api/jobApi";
+import { IJob } from "@/types";
+import { JobStatus } from "@/enum";
 
 export function JobTracker() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [salaryFilter, setSalaryFilter] = useState("all")
-  const [deadlineFilter, setDeadlineFilter] = useState("all")
+  const { data: session, status } = useSession();
+  const { data: jobRes, isLoading } = useGetMyJobsQuery("");
+  const jobs: IJob[] = jobRes?.data || [];
+  const router = useRouter();
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
-      return
-    }
-  }, [status, router])
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [salaryFilter, setSalaryFilter] = useState<string>("all");
+  const [deadlineFilter, setDeadlineFilter] = useState<string>("all");
 
-  // Load jobs from localStorage on mount
-  useEffect(() => {
-    if (session?.user?.email) {
-      const userKey = `jobs_${session.user.email}`
-      const savedJobs = localStorage.getItem(userKey)
-      if (savedJobs) {
-        setJobs(JSON.parse(savedJobs))
-      } else {
-        // Set initial jobs for new users
-        const userJobs = initialJobs.map(job => ({ 
-          ...job, 
-          userId: session.user.email 
-        }))
-        setJobs(userJobs)
-        localStorage.setItem(userKey, JSON.stringify(userJobs))
-      }
-    }
-  }, [session])
-
-  // Save jobs to localStorage whenever jobs change
-  useEffect(() => {
-    if (session?.user?.email && jobs.length > 0) {
-      const userKey = `jobs_${session.user.email}`
-      localStorage.setItem(userKey, JSON.stringify(jobs))
-    }
-  }, [jobs, session])
-
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
-  if (!session) {
-    return null
-  }
+  if (!session) return null;
 
-  const addJob = (newJob: Omit<Job, "id" | "createdAt">) => {
-    const job: Job = {
-      ...newJob,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      userId: session.user.email || ''
-    }
-    setJobs([...jobs, job])
-  }
-
-  const updateJobStatus = (jobId: string, newStatus: "wishlist" | "applied") => {
-    setJobs(jobs.map(job => 
+  // Helper functions
+  const updateJobStatus = (jobId: string, newStatus: JobStatus) => {
+    const updated = jobs.map((job) =>
       job.id === jobId ? { ...job, status: newStatus } : job
-    ))
-  }
+    );
+    // update in store if needed
+  };
 
   const deleteJob = (jobId: string) => {
-    setJobs(jobs.filter(job => job.id !== jobId))
-  }
+    const updated = jobs.filter((job) => job.id !== jobId);
+    // update in store if needed
+  };
 
-  const updateJob = (updatedJob: Job) => {
-    setJobs(jobs.map(job => job.id === updatedJob.id ? updatedJob : job))
-  }
+  const updateJob = (updatedJob: IJob) => {
+    const updated = jobs.map((job) =>
+      job.id === updatedJob.id ? updatedJob : job
+    );
+    // update in store if needed
+  };
 
-  const filterJobs = (jobList: Job[]) => {
-    return jobList.filter(job => {
-      const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           job.company.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchesSalary = salaryFilter === "" || salaryFilter === "all" || 
-        (salaryFilter === "100k+" && parseInt(job.offeredSalary.replace(/[^0-9]/g, '')) >= 100000) ||
-        (salaryFilter === "120k+" && parseInt(job.offeredSalary.replace(/[^0-9]/g, '')) >= 120000) ||
-        (salaryFilter === "150k+" && parseInt(job.offeredSalary.replace(/[^0-9]/g, '')) >= 150000)
+  const filterJobs = (jobList: IJob[]): IJob[] => {
+    return jobList.filter((job) => {
+      const matchesSearch =
+        job.jobTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.companyName.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesDeadline = deadlineFilter === "" || deadlineFilter === "all" ||
-        (deadlineFilter === "week" && new Date(job.deadline) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)) ||
-        (deadlineFilter === "month" && new Date(job.deadline) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+      const numericSalary = parseInt(job.salary.replace(/[^0-9]/g, ""));
+      const matchesSalary =
+        salaryFilter === "all" ||
+        (salaryFilter === "100k+" && numericSalary >= 100000) ||
+        (salaryFilter === "120k+" && numericSalary >= 120000) ||
+        (salaryFilter === "150k+" && numericSalary >= 150000);
 
-      return matchesSearch && matchesSalary && matchesDeadline
-    })
-  }
+      const matchesDeadline =
+        deadlineFilter === "all" ||
+        (deadlineFilter === "week" &&
+          new Date(job.deadline) <=
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)) ||
+        (deadlineFilter === "month" &&
+          new Date(job.deadline) <=
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
-  const wishlistJobs = filterJobs(jobs.filter(job => job.status === "wishlist"))
-  const appliedJobs = filterJobs(jobs.filter(job => job.status === "applied"))
+      return matchesSearch && matchesSalary && matchesDeadline;
+    });
+  };
+
+  const listedJobs = filterJobs(
+    jobs.filter((job) => job.status === JobStatus.LISTED)
+  );
+  const appliedJobs = filterJobs(
+    jobs.filter(
+      (job) =>
+        job.status !== JobStatus.LISTED && job.status !== JobStatus.REJECTED
+    )
+  );
+  const rejectedJobs = filterJobs(
+    jobs.filter((job) => job.status === JobStatus.REJECTED)
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,11 +117,16 @@ export function JobTracker() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
               <Briefcase className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-semibold text-gray-900">My Job Tracker</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                My Job Tracker
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/profile">
-                <Button variant="outline" className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
                   <User className="h-4 w-4" />
                   <span>Profile</span>
                 </Button>
@@ -202,28 +145,28 @@ export function JobTracker() {
 
       {/* Welcome Message */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Welcome, {session.user.name || session.user.email?.split('@')[0]}!
-              </h2>
-              <p className="text-sm text-gray-600">
-                You have {jobs.length} jobs tracked • {wishlistJobs.length} to apply • {appliedJobs.length} applied
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="secondary" className="hidden sm:flex">
-                {session.provider === "google" && "Google Account"}
-                {session.provider === "github" && "GitHub Account"}
-                {session.provider === "credentials" && "Email Account"}
-              </Badge>
-              <Link href="/profile">
-                <Button variant="outline" size="sm">
-                  Complete Profile for Match Scores
-                </Button>
-              </Link>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Welcome,{" "}
+              {session.user?.name || session.user?.email?.split("@")[0]}!
+            </h2>
+            <p className="text-sm text-gray-600">
+              You have {jobs.length} jobs tracked • {listedJobs.length} to apply
+              • {appliedJobs.length} applied
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="hidden sm:flex">
+              {session.provider === "google" && "Google Account"}
+              {session.provider === "github" && "GitHub Account"}
+              {session.provider === "credentials" && "Email Account"}
+            </Badge>
+            <Link href="/profile">
+              <Button variant="outline" size="sm">
+                Complete Profile for Match Scores
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -266,23 +209,48 @@ export function JobTracker() {
 
         {/* Job Lists */}
         <Tabs defaultValue="wishlist" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="wishlist" className="flex items-center space-x-2">
+          <TabsList className="grid w-full grid-cols-3 flex-wrap mb-6 rounded-lg bg-muted p-1">
+            <TabsTrigger
+              value="wishlist"
+              className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
+            >
               <Briefcase className="h-4 w-4" />
-              <span>Jobs to Apply ({wishlistJobs.length})</span>
+              <span className="truncate">
+                Jobs to Apply ({listedJobs.length})
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="applied" className="flex items-center space-x-2">
+
+            <TabsTrigger
+              value="applied"
+              className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
+            >
               <CheckCircle className="h-4 w-4" />
-              <span>Applied Jobs ({appliedJobs.length})</span>
+              <span className="truncate">
+                Applied Jobs ({appliedJobs.length})
+              </span>
+            </TabsTrigger>
+
+            <TabsTrigger
+              value="rejected"
+              className="flex items-center space-x-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
+            >
+              <XCircle className="h-4 w-4 text-red-500" />
+              <span className="truncate">
+                Rejected Jobs ({rejectedJobs.length})
+              </span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="wishlist" className="space-y-4">
-            {wishlistJobs.length === 0 ? (
+            {listedJobs.length === 0 ? (
               <div className="text-center py-12">
                 <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No jobs in your wishlist</h3>
-                <p className="text-gray-500 mb-4">Start by adding some jobs you want to apply to.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No jobs in your wishlist
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Start by adding some jobs you want to apply to.
+                </p>
                 <Link href="/add-job">
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -292,13 +260,12 @@ export function JobTracker() {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {wishlistJobs.map((job) => (
+                {listedJobs.map((job) => (
                   <JobCard
                     key={job.id}
                     job={job}
                     onStatusChange={updateJobStatus}
                     onDelete={deleteJob}
-                    onView={() => setSelectedJob(job)}
                   />
                 ))}
               </div>
@@ -309,8 +276,12 @@ export function JobTracker() {
             {appliedJobs.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
-                <p className="text-gray-500">Jobs you apply to will appear here.</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No applications yet
+                </h3>
+                <p className="text-gray-500">
+                  Jobs you apply to will appear here.
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -320,7 +291,28 @@ export function JobTracker() {
                     job={job}
                     onStatusChange={updateJobStatus}
                     onDelete={deleteJob}
-                    onView={() => setSelectedJob(job)}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="rejected" className="space-y-4">
+            {rejectedJobs.length === 0 ? (
+              <div className="text-center py-12">
+                <XCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No rejected jobs
+                </h3>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {rejectedJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    onStatusChange={updateJobStatus}
+                    onDelete={deleteJob}
                   />
                 ))}
               </div>
@@ -328,18 +320,6 @@ export function JobTracker() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Modals */}
-      {selectedJob && (
-        <JobDetailsModal
-          job={selectedJob}
-          isOpen={!!selectedJob}
-          onClose={() => setSelectedJob(null)}
-          onUpdate={updateJob}
-          onStatusChange={updateJobStatus}
-          onDelete={deleteJob}
-        />
-      )}
     </div>
-  )
+  );
 }

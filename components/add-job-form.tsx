@@ -41,7 +41,7 @@ const JobFormSchema = z.object({
   companyWebsite: z.string().url("Invalid company website URL"),
   jobPostUrl: z.string().url("Invalid job post URL"),
   salary: z.string().min(1, "Salary is required"),
-  expectedSalary: z.string().min(1, "Expected salary is required"),
+  expectedSalary: z.string().optional(),
   deadline: z.string().min(1, "Deadline is required"),
   type: z.nativeEnum(JobType, {
     errorMap: () => ({ message: "Job type is required" }),
@@ -53,6 +53,7 @@ const JobFormSchema = z.object({
   experience: z.string().min(1, "Experience is required"),
   details: z.string().optional(),
   status: z.nativeEnum(JobStatus).default(JobStatus.LISTED),
+  note: z.string().optional(),
 });
 
 type JobFormValues = z.infer<typeof JobFormSchema>;
@@ -61,8 +62,8 @@ export function AddJobForm() {
   const [jobDetails, setJobDetails] = useState("");
   const router = useRouter();
   const session = useSession();
-  console.log("session", session);
-  const [addJob] = useAddJobMutation();
+  const user = session?.data?.user;
+  const [addJob, { isLoading }] = useAddJobMutation();
   const form = useForm<JobFormValues>({
     resolver: zodResolver(JobFormSchema),
     defaultValues: {
@@ -79,32 +80,28 @@ export function AddJobForm() {
       experience: "",
       details: "",
       status: JobStatus.LISTED,
+      note: "",
     },
   });
 
   async function onSubmit(values: JobFormValues) {
     const payload = {
       ...values,
-      userId: session?.user?.email ?? "50C2E218",
+      userId: user?.id,
       skills: values.skills.split(",").map((s) => s.trim()),
+      statusHistory: [
+        {
+          status: values.status,
+          timeStamp: new Date(),
+          note: values.note || "",
+        },
+      ],
       details: jobDetails,
     };
 
-    // toast.success("Job Created!", {
-    //   description: (
-    //     <pre className="mt-2 w-[350px] rounded-md bg-neutral-950 p-4">
-    //       <code className="text-white">{JSON.stringify(payload, null, 2)}</code>
-    //     </pre>
-    //   ),
-    // });
-
-    // TODO: Call your API here (instead of localStorage)
-    // await fetch("/api/jobs", { method: "POST", body: JSON.stringify(payload) })
-
-    // router.push("/dashboard");
-
     try {
       await addJob(payload).unwrap();
+      router.push("/dashboard");
     } catch (error) {
       console.log("error");
     }
@@ -202,7 +199,7 @@ export function AddJobForm() {
                   name="expectedSalary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Expected Salary *</FormLabel>
+                      <FormLabel>Expected Salary (optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="$90,000" {...field} />
                       </FormControl>
@@ -246,7 +243,11 @@ export function AddJobForm() {
                         </FormControl>
                         <SelectContent>
                           {Object.values(JobType).map((type) => (
-                            <SelectItem key={type} value={type}>
+                            <SelectItem
+                              className="capitalize"
+                              key={type}
+                              value={type}
+                            >
                               {type}
                             </SelectItem>
                           ))}
@@ -347,6 +348,23 @@ export function AddJobForm() {
                   </FormItem>
                 )}
               />
+              {/* Note (for statusHistory) */}
+              <FormField
+                control={form.control}
+                name="note"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Add note about this status..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               {/* Details */}
               <div>
                 <Label className="">Details*</Label>
@@ -366,7 +384,9 @@ export function AddJobForm() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Add Job</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Adding..." : "Add Job"}
+                </Button>
               </div>
             </form>
           </Form>

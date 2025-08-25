@@ -72,8 +72,7 @@ export const authOption: NextAuthOptions = {
               }
             );
 
-            const userData = data;
-
+            const userData = data?.data;
             token = {
               ...token,
               id: userData.id,
